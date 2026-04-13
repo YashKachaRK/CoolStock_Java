@@ -40,7 +40,8 @@ public class CashierController {
     @PostMapping("/verifyPayment")
     public String verifyPayment(@RequestParam("orderId") int orderId, HttpSession session) {
         if (!checkSession(session)) return "redirect:/login";
-        orderDAO.confirmPayment(orderId);
+        Staff cashier = (Staff) session.getAttribute("staff");
+        orderDAO.confirmPayment(orderId, cashier.getId());
         return "redirect:/cashier/dashboard";
     }
 }

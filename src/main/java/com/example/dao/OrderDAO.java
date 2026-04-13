@@ -27,6 +27,9 @@ public class OrderDAO {
     @Autowired
     private ProductDAO productDAO;
 
+    @Autowired
+    private OrderHistoryDAO orderHistoryDAO;
+
     public Order findById(int id) {
         String sql = "SELECT * FROM orders WHERE id = ?";
         List<Order> orders = jdbcTemplate.query(sql, new OrderRowMapper(), id);
@@ -104,6 +107,9 @@ public class OrderDAO {
         for (com.example.model.OrderItem item : items) {
             jdbcTemplate.update(itemSql, orderId, item.getProductId(), item.getQuantity(), item.getUnitPrice(), item.getTotalPrice());
         }
+
+        // Log initial creation
+        orderHistoryDAO.log(orderId, "Ordered", null, "Order placed by customer.");
     }
 
     private String getItemsSummaryForOrder(int orderId) {
@@ -146,9 +152,23 @@ public class OrderDAO {
         }, orderId);
     }
 
-    public int assignDeliveryBoy(int orderId, int staffId) {
+    public int assignDeliveryBoy(int orderId, int staffId, int managerId) {
         String sql = "UPDATE orders SET delivery_boy_id = ?, status = 'Shipped' WHERE id = ?";
-        return jdbcTemplate.update(sql, staffId, orderId);
+        int rows = jdbcTemplate.update(sql, staffId, orderId);
+        if (rows > 0) {
+            Staff deliveryBoy = staffDAO.findById(staffId);
+            orderHistoryDAO.log(orderId, "Assigned", managerId, "Assigned to " + (deliveryBoy != null ? deliveryBoy.getFullName() : "Delivery Boy " + staffId));
+        }
+        return rows;
+    }
+
+    public int updateStatusWithLog(int orderId, String status, Integer performerId) {
+        String sql = "UPDATE orders SET status = ? WHERE id = ?";
+        int rows = jdbcTemplate.update(sql, status, orderId);
+        if (rows > 0) {
+            orderHistoryDAO.log(orderId, status, performerId, "Status updated to " + status);
+        }
+        return rows;
     }
 
     public int updateStatus(int orderId, String status) {
@@ -241,9 +261,13 @@ public class OrderDAO {
         return orders;
     }
 
-    public int updateHandover(int orderId, String status, String paymentStatus, int cashierId) {
+    public int updateHandover(int orderId, String status, String paymentStatus, int cashierId, int deliveryBoyId) {
         String sql = "UPDATE orders SET status = ?, payment_status = ?, cashier_id = ? WHERE id = ?";
-        return jdbcTemplate.update(sql, status, paymentStatus, cashierId, orderId);
+        int rows = jdbcTemplate.update(sql, status, paymentStatus, cashierId, orderId);
+        if (rows > 0) {
+            orderHistoryDAO.log(orderId, "Deposited", deliveryBoyId, "Cash deposited to cashier (ID: " + cashierId + ")");
+        }
+        return rows;
     }
 
     public List<Order> findPendingDepositsForCashier(int cashierId) {
@@ -275,14 +299,18 @@ public class OrderDAO {
         return sum != null ? sum : java.math.BigDecimal.ZERO;
     }
 
-    public int confirmPayment(int orderId) {
+    public int confirmPayment(int orderId, int cashierId) {
         // Fetch order to get total amount and customerId before confirming
         Order order = findById(orderId);
         if (order != null && "Pending Deposit".equals(order.getPaymentStatus())) {
             customerDAO.incrementTotalSpend(order.getCustomerId(), order.getTotalAmount());
         }
         String sql = "UPDATE orders SET payment_status = 'Paid', status = 'Delivered' WHERE id = ?";
-        return jdbcTemplate.update(sql, orderId);
+        int rows = jdbcTemplate.update(sql, orderId);
+        if (rows > 0) {
+            orderHistoryDAO.log(orderId, "Paid", cashierId, "Payment verified and order finalized.");
+        }
+        return rows;
     }
 
     private static class OrderRowMapper implements RowMapper<Order> {

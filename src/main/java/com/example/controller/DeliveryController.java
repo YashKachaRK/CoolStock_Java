@@ -97,10 +97,11 @@ public class DeliveryController {
                                HttpSession session) {
         if (!checkSession(session)) return "redirect:/login";
         
+        Staff deliveryBoy = (Staff) session.getAttribute("staff");
         if ("Delivered".equalsIgnoreCase(status) && cashierId != null) {
-            orderDAO.updateHandover(orderId, "Delivered", "Pending Deposit", cashierId);
+            orderDAO.updateHandover(orderId, "Delivered", "Pending Deposit", cashierId, deliveryBoy.getId());
         } else {
-            orderDAO.updateStatus(orderId, status);
+            orderDAO.updateStatusWithLog(orderId, status, deliveryBoy.getId());
         }
         
         return "redirect:/delivery/dashboard";
