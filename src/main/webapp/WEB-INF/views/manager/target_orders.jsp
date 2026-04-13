@@ -143,10 +143,16 @@
                                         </c:choose>
                                     </td>
                                     <td class="px-8 py-6 text-right">
-                                        <form action="${pageContext.request.contextPath}/manager/orders/delete" method="POST" onsubmit="return confirm('Archive this transaction forever?')">
-                                            <input type="hidden" name="id" value="${o.id}">
-                                            <button type="submit" class="w-10 h-10 bg-white border border-gray-100 rounded-xl shadow-lg hover:border-rose-200 text-sm transition active:scale-90" title="Delete Log">🗑️</button>
-                                        </form>
+                                        <div class="flex flex-col gap-2 items-end">
+                                            <button onclick="viewFlow(${o.id}, '${o.orderNumber}')" 
+                                                    class="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-[10px] font-black hover:bg-indigo-100 transition uppercase tracking-widest border border-indigo-100">
+                                                View Flow
+                                            </button>
+                                            <form action="${pageContext.request.contextPath}/manager/orders/delete" method="POST" onsubmit="return confirm('Archive this transaction forever?')">
+                                                <input type="hidden" name="id" value="${o.id}">
+                                                <button type="submit" class="w-10 h-10 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-rose-200 text-sm transition active:scale-90" title="Delete Log">🗑️</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             </c:forEach>
@@ -155,6 +161,31 @@
                 </div>
             </div>
         </main>
+    <!-- Flow Timeline Modal -->
+    <div id="flowModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl border border-white/20 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 blur-[80px]"></div>
+            
+            <div class="p-8 relative z-10">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h3 class="text-2xl font-black text-gray-900 tracking-tight" id="modalOrderNumber">ORD-XXXXX</h3>
+                        <p class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1">Lifecycle Audit Trail</p>
+                    </div>
+                    <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-400 hover:text-gray-900 transition">✕</button>
+                </div>
+
+                <div id="timelineContainer" class="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-100">
+                    <!-- Timeline items will be injected here -->
+                </div>
+
+                <div class="mt-10">
+                    <button onclick="closeModal()" class="w-full py-4 bg-gray-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black transition shadow-xl">
+                        Close Audit
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -187,6 +218,50 @@
             document.getElementById('fromDate').value = '';
             document.getElementById('toDate').value = '';
             filterOrders();
+        }
+
+        async function viewFlow(orderId, orderNumber) {
+            document.getElementById('modalOrderNumber').innerText = orderNumber;
+            const container = document.getElementById('timelineContainer');
+            container.innerHTML = '<p class="text-center py-10 text-xs font-bold text-gray-400 animate-pulse">Scanning audit logs...</p>';
+            document.getElementById('flowModal').classList.remove('hidden');
+
+            try {
+                const response = await fetch(`${pageContext.request.contextPath}/manager/orders/history?id=` + orderId);
+                const history = await response.json();
+                
+                container.innerHTML = '';
+                if (history.length === 0) {
+                    container.innerHTML = '<p class="text-center py-10 text-xs font-bold text-gray-400">No logs found for this order.</p>';
+                } else {
+                    history.forEach((h, index) => {
+                        const date = new Date(h.performedAt);
+                        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const dateStr = date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+                        
+                        const item = `
+                            <div class="relative pl-10">
+                                <div class="absolute left-0 top-1.5 w-6 h-6 rounded-full \${index === history.length - 1 ? 'bg-indigo-600 border-4 border-indigo-100' : 'bg-gray-200'} z-10"></div>
+                                <div>
+                                    <div class="flex justify-between items-start">
+                                        <h4 class="font-black text-gray-900 text-sm tracking-tight">\${h.action}</h4>
+                                        <span class="text-[9px] font-black text-gray-400 uppercase">\${dateStr}, \${timeStr}</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 font-medium mt-0.5">\${h.remarks}</p>
+                                    \${h.performerName ? `<p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mt-1 italic">👤 By: \${h.performerName}</p>` : ''}
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += item;
+                    });
+                }
+            } catch (error) {
+                container.innerHTML = '<p class="text-center py-10 text-xs font-bold text-rose-500">Error fetching logs.</p>';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('flowModal').classList.add('hidden');
         }
     </script>
 </body>

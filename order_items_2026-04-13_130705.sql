@@ -10,7 +10,7 @@ CREATE TABLE `order_items` (
   KEY `product_id` (`product_id`),
   CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;insert into `order_items` (`id`, `order_id`, `product_id`, `quantity`, `total_price`, `unit_price`) values (1, 1, 1, 30, '3600.00', '120.00');
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;insert into `order_items` (`id`, `order_id`, `product_id`, `quantity`, `total_price`, `unit_price`) values (1, 1, 1, 30, '3600.00', '120.00');
 insert into `order_items` (`id`, `order_id`, `product_id`, `quantity`, `total_price`, `unit_price`) values (2, 1, 2, 60, '900.00', '15.00');
 insert into `order_items` (`id`, `order_id`, `product_id`, `quantity`, `total_price`, `unit_price`) values (3, 2, 2, 40, '1600.00', '40.00');
 insert into `order_items` (`id`, `order_id`, `product_id`, `quantity`, `total_price`, `unit_price`) values (4, 3, 1, 24, '2880.00', '120.00');

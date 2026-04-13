@@ -1,6 +1,7 @@
 package com.example.controller;
 
 import com.example.dao.OrderDAO;
+import com.example.dao.OrderHistoryDAO;
 import com.example.dao.ProductDAO;
 import com.example.dao.StaffDAO;
 import com.example.model.Staff;
@@ -80,7 +81,8 @@ public class ManagerController {
     @PostMapping("/assignOrder")
     public String assignOrder(@RequestParam("orderId") int orderId, @RequestParam("staffId") int staffId, HttpSession session) {
         if (!checkSession(session)) return "redirect:/login";
-        orderDAO.assignDeliveryBoy(orderId, staffId);
+        Staff manager = (Staff) session.getAttribute("staff");
+        orderDAO.assignDeliveryBoy(orderId, staffId, manager.getId());
         return "redirect:/manager/orders";
     }
 
@@ -161,10 +163,20 @@ public class ManagerController {
         return "redirect:/manager/orders";
     }
 
+    @Autowired
+    private OrderHistoryDAO orderHistoryDAO;
+
     @GetMapping("/orders/items")
     @ResponseBody
     public List<com.example.model.OrderItem> getOrderItems(@RequestParam("id") int id, HttpSession session) {
         if (!checkSession(session)) return null;
         return orderDAO.findOrderItems(id);
+    }
+
+    @GetMapping("/orders/history")
+    @ResponseBody
+    public List<com.example.model.OrderHistory> getOrderHistory(@RequestParam("id") int id, HttpSession session) {
+        if (!checkSession(session)) return null;
+        return orderHistoryDAO.findByOrderId(id);
     }
 }
