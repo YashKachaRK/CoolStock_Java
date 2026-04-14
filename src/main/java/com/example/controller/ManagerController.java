@@ -2,15 +2,22 @@ package com.example.controller;
 
 import com.example.dao.OrderDAO;
 import com.example.dao.OrderHistoryDAO;
+import com.example.dao.ProductBatchDAO;
 import com.example.dao.ProductDAO;
 import com.example.dao.StaffDAO;
 import com.example.model.Staff;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.util.Date;
 import java.util.List;
 
 @Controller
@@ -25,6 +32,9 @@ public class ManagerController {
 
     @Autowired
     private ProductDAO productDAO;
+
+    @Autowired
+    private ProductBatchDAO productBatchDAO;
 
     private boolean checkSession(HttpSession session) {
         Staff staff = (Staff) session.getAttribute("staff");
@@ -43,6 +53,7 @@ public class ManagerController {
         model.addAttribute("totalRevenue", orderDAO.getTotalRevenue());
         model.addAttribute("productCount", productDAO.countTotalProducts());
         model.addAttribute("lowStockCount", productDAO.countLowStock(10));
+        model.addAttribute("expiringSoonCount", productBatchDAO.countExpiringSoon(30));
         
         model.addAttribute("countPending", orderDAO.countOrdersByStatus("Processing"));
         model.addAttribute("countShipped", orderDAO.countOrdersByStatus("Shipped"));
@@ -87,6 +98,7 @@ public class ManagerController {
     }
 
     @PostMapping("/products/add")
+    @Transactional
     public String addProduct(
             @RequestParam("name") String name,
             @RequestParam("category") String category,
@@ -95,6 +107,7 @@ public class ManagerController {
             @RequestParam("stock") int stock,
             @RequestParam("pcsPerBox") int pcsPerBox,
             @RequestParam("description") String description,
+            @RequestParam("expiryDate") @DateTimeFormat(pattern = "yyyy-MM-dd") Date expiryDate,
             HttpSession session) {
         
         if (!checkSession(session)) return "redirect:/login";
@@ -110,14 +123,31 @@ public class ManagerController {
         p.setDescription(description);
         
         productDAO.save(p);
+        
+        // After saving product, get the generated ID to create the first batch
+        com.example.model.Product saved = productDAO.findByCode(p.getProductCode());
+        if (saved != null && stock > 0) {
+            com.example.model.ProductBatch batch = new com.example.model.ProductBatch();
+            batch.setProductId(saved.getId());
+            batch.setBatchNumber("B-INIT-" + System.currentTimeMillis());
+            batch.setQuantity(stock);
+            batch.setExpiryDate(expiryDate);
+            productBatchDAO.addBatch(batch);
+        }
+        
         return "redirect:/manager/products";
     }
 
     @PostMapping("/products/quickRestock")
     @ResponseBody
-    public String quickRestock(@RequestParam("id") int id, @RequestParam("amount") int amount, HttpSession session) {
+    public String quickRestock(
+            @RequestParam("id") int id, 
+            @RequestParam("amount") int amount, 
+            @RequestParam("expiryDate") @DateTimeFormat(pattern = "yyyy-MM-dd") Date expiryDate,
+            HttpSession session) {
         if (!checkSession(session)) return "Error: Unauthorized";
-        productDAO.addStock(id, amount);
+        
+        productDAO.addStock(id, amount, expiryDate);
         return "Success";
     }
 

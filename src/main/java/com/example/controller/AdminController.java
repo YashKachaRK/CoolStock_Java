@@ -2,6 +2,8 @@ package com.example.controller;
 
 import com.example.dao.CustomerDAO;
 import com.example.dao.OrderDAO;
+import com.example.dao.OrderHistoryDAO;
+import com.example.dao.ProductBatchDAO;
 import com.example.dao.ProductDAO;
 import com.example.dao.StaffDAO;
 import com.example.model.JobApplication;
@@ -11,7 +13,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletResponse;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
@@ -36,6 +38,12 @@ public class AdminController {
 
     @Autowired
     private ProductDAO productDAO;
+
+    @Autowired
+    private OrderHistoryDAO orderHistoryDAO;
+
+    @Autowired
+    private ProductBatchDAO productBatchDAO;
 
     private boolean checkAdminSession(HttpSession session) {
         Staff staff = (Staff) session.getAttribute("staff");
@@ -64,6 +72,7 @@ public class AdminController {
         model.addAttribute("totalCustomers", totalCustomers);
         model.addAttribute("totalEmployees", totalEmployees);
         model.addAttribute("ordersThisMonth", ordersThisMonth);
+        model.addAttribute("expiringSoonCount", productBatchDAO.countExpiringSoon(30));
 
         return "admin/dashboard";
     }
@@ -289,5 +298,12 @@ public class AdminController {
     @GetMapping("/manageProductAdmin")
     public String manageProductAdminLegacy() {
         return "redirect:/admin/products";
+    }
+
+    @GetMapping("/admin/orders/history")
+    @ResponseBody
+    public List<com.example.model.OrderHistory> getOrderHistory(@RequestParam("id") int id, HttpSession session) {
+        if (!checkAdminSession(session)) return null;
+        return orderHistoryDAO.findByOrderId(id);
     }
 }
