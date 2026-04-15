@@ -16,6 +16,12 @@ public class JobApplicationDAO {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    public boolean existsByEmail(String email) {
+        String sql = "SELECT COUNT(*) FROM job_applications WHERE email = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, email);
+        return count != null && count > 0;
+    }
+
     // ── INSERT ────────────────────────────────────────────────────────────────
 
     public int save(JobApplication app) {

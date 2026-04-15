@@ -3,6 +3,8 @@ package com.example.dao;
 import com.example.model.Customer;
 import com.example.model.Order;
 import com.example.model.Staff;
+import com.example.service.EmailService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -29,6 +31,9 @@ public class OrderDAO {
 
     @Autowired
     private OrderHistoryDAO orderHistoryDAO;
+
+    @Autowired
+    private EmailService emailService;
 
     public Order findById(int id) {
         String sql = "SELECT * FROM orders WHERE id = ?";
@@ -83,7 +88,14 @@ public class OrderDAO {
             productDAO.addStock(item.getProductId(), item.getQuantity());
         }
         String sql = "UPDATE orders SET status = 'Cancelled' WHERE id = ?";
-        return jdbcTemplate.update(sql, orderId);
+        int rows = jdbcTemplate.update(sql, orderId);
+        if (rows > 0) {
+            Order order = findById(orderId);
+            if (order != null && order.getCustomer() != null && order.getCustomer().getEmail() != null) {
+                emailService.sendOrderUpdate(order.getCustomer().getEmail(), order.getOrderNumber(), "Cancelled");
+            }
+        }
+        return rows;
     }
 
     public void saveOrderWithItems(Order order, List<com.example.model.OrderItem> items) {
@@ -158,6 +170,11 @@ public class OrderDAO {
         if (rows > 0) {
             Staff deliveryBoy = staffDAO.findById(staffId);
             orderHistoryDAO.log(orderId, "Assigned", managerId, "Assigned to " + (deliveryBoy != null ? deliveryBoy.getFullName() : "Delivery Boy " + staffId));
+            
+            Order order = findById(orderId);
+            if (order != null && order.getCustomer() != null && order.getCustomer().getEmail() != null) {
+                emailService.sendOrderUpdate(order.getCustomer().getEmail(), order.getOrderNumber(), "Assigned to Delivery");
+            }
         }
         return rows;
     }
@@ -167,6 +184,11 @@ public class OrderDAO {
         int rows = jdbcTemplate.update(sql, status, orderId);
         if (rows > 0) {
             orderHistoryDAO.log(orderId, status, performerId, "Status updated to " + status);
+            
+            Order order = findById(orderId);
+            if (order != null && order.getCustomer() != null && order.getCustomer().getEmail() != null) {
+                emailService.sendOrderUpdate(order.getCustomer().getEmail(), order.getOrderNumber(), status);
+            }
         }
         return rows;
     }
@@ -309,6 +331,10 @@ public class OrderDAO {
         int rows = jdbcTemplate.update(sql, orderId);
         if (rows > 0) {
             orderHistoryDAO.log(orderId, "Paid", cashierId, "Payment verified and order finalized.");
+            
+            if (order != null && order.getCustomer() != null && order.getCustomer().getEmail() != null) {
+                emailService.sendOrderUpdate(order.getCustomer().getEmail(), order.getOrderNumber(), "Delivered (Paid)");
+            }
         }
         return rows;
     }
