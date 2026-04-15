@@ -1,6 +1,8 @@
 package com.example.dao;
 
 import com.example.model.Product;
+import com.example.service.EmailService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -19,6 +21,9 @@ public class ProductDAO {
 
     @Autowired
     private ProductBatchDAO productBatchDAO;
+
+    @Autowired
+    private EmailService emailService;
 
     public List<Product> findAll() {
         String sql = "SELECT * FROM products WHERE is_active = TRUE ORDER BY name ASC";
@@ -93,7 +98,21 @@ public class ProductDAO {
     }
 
     @Transactional
+    public void processLowStockAlerts(int threshold, String managerEmail) {
+        String query = "SELECT * FROM products WHERE stock <= ? AND low_stock_alert_sent = FALSE AND is_active = TRUE";
+        List<Product> products = jdbcTemplate.query(query, new ProductRowMapper(), threshold);
+        
+        for (Product p : products) {
+            emailService.sendInventoryAlert(managerEmail, p.getName(), "Low Stock (" + p.getStock() + " units)");
+            jdbcTemplate.update("UPDATE products SET low_stock_alert_sent = TRUE WHERE id = ?", p.getId());
+        }
+    }
+
+    @Transactional
     public int addStock(int id, int amount, java.util.Date expiryDate) {
+        // Reset alert flag on replenishment
+        jdbcTemplate.update("UPDATE products SET low_stock_alert_sent = FALSE WHERE id = ?", id);
+        
         // 1. Create a new batch
         com.example.model.ProductBatch batch = new com.example.model.ProductBatch();
         batch.setProductId(id);

@@ -60,6 +60,13 @@ public class ManagerController {
         model.addAttribute("countDeliveredToday", orderDAO.countTotalDelivered());
         model.addAttribute("countTotalToday", orderDAO.countOrdersToday());
 
+        // --- Process Inventory Alerts (Email) ---
+        Staff staff = (Staff) session.getAttribute("staff");
+        if (staff != null && staff.getEmail() != null) {
+            productDAO.processLowStockAlerts(10, staff.getEmail());
+            productBatchDAO.processExpiryAlerts(30, staff.getEmail());
+        }
+
         return "manager/dashboard";
     }
 

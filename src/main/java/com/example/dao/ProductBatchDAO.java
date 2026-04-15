@@ -1,6 +1,7 @@
 package com.example.dao;
 
 import com.example.model.ProductBatch;
+import com.example.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -16,6 +17,9 @@ public class ProductBatchDAO {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EmailService emailService;
 
     public void addBatch(ProductBatch batch) {
         String sql = "INSERT INTO product_batches (product_id, batch_number, quantity, expiry_date) VALUES (?, ?, ?, ?)";
@@ -53,9 +57,23 @@ public class ProductBatchDAO {
         }
 
         if (remaining > 0) {
-            // This case shouldn't happen if UI checks stock, but good to have a safeguard or log
             throw new RuntimeException("Insufficient stock in batches for product ID: " + productId);
         }
+    }
+
+    @Transactional
+    public void processExpiryAlerts(int daysThreshold, String managerEmail) {
+        String query = "SELECT pb.*, p.name as product_name FROM product_batches pb " +
+                      "JOIN products p ON pb.product_id = p.id " +
+                      "WHERE pb.quantity > 0 AND pb.expiry_alert_sent = FALSE " +
+                      "AND pb.expiry_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)";
+        
+        jdbcTemplate.query(query, (rs) -> {
+            String prodName = rs.getString("product_name");
+            String expiry = rs.getString("expiry_date");
+            emailService.sendInventoryAlert(managerEmail, prodName, "Expiry (" + expiry + ")");
+            jdbcTemplate.update("UPDATE product_batches SET expiry_alert_sent = TRUE WHERE id = ?", rs.getInt("id"));
+        }, daysThreshold);
     }
 
     private static class ProductBatchRowMapper implements RowMapper<ProductBatch> {

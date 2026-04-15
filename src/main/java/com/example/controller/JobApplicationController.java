@@ -16,11 +16,26 @@ public class JobApplicationController {
     @Autowired
     private JobApplicationService jobApplicationService;
 
+    @Autowired
+    private com.example.dao.StaffDAO staffDAO;
+
+    @Autowired
+    private com.example.service.EmailService emailService;
+
     // ── Serve home page ───────────────────────────────────────────────────────
 
     @GetMapping("/")
     public String home() {
         return "index";   // resolves to /WEB-INF/views/index.jsp
+    }
+
+    @GetMapping("/checkEmail")
+    @ResponseBody
+    public String checkEmail(@RequestParam("email") String email) {
+        if (jobApplicationService.isEmailRegistered(email)) {
+             return "⚠️ This email is already registered. Please use another.";
+        }
+        return "true";
     }
 
 
@@ -31,9 +46,45 @@ public class JobApplicationController {
     public String approveApplication(
             @RequestParam("id") int id,
             RedirectAttributes redirectAttributes) {
-        jobApplicationService.updateStatus(id, "ACCEPTED");
-        redirectAttributes.addFlashAttribute("toastMsg", "ACCEPTED");
+        
+        JobApplication app = jobApplicationService.getApplicationById(id);
+        if (app != null) {
+            // 1. Generate Random Password
+            String plainPassword = generateRandomPassword(8);
+            String hashedPassword = org.mindrot.jbcrypt.BCrypt.hashpw(plainPassword, org.mindrot.jbcrypt.BCrypt.gensalt());
+            
+            // 2. Create Staff Account
+            com.example.model.Staff newStaff = new com.example.model.Staff();
+            newStaff.setFullName(app.getFullName());
+            newStaff.setEmail(app.getEmail());
+            newStaff.setPhone(app.getPhone());
+            newStaff.setRole(app.getRole());
+            newStaff.setPasswordHash(hashedPassword);
+            newStaff.setStaffKey("STF-" + System.currentTimeMillis());
+            newStaff.setActive(true);
+            
+            staffDAO.save(newStaff);
+            
+            // 3. Send Credentials via Email
+            emailService.sendCredentials(app.getEmail(), app.getRole(), plainPassword);
+            
+            // 4. Update Application Status
+            jobApplicationService.updateStatus(id, "ACCEPTED");
+            
+            redirectAttributes.addFlashAttribute("toastMsg", "Approved & Credentials Sent to " + app.getEmail());
+        }
+        
         return "redirect:/admin/dashboard";
+    }
+
+    private String generateRandomPassword(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$";
+        java.util.Random rnd = new java.util.Random();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(rnd.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     // ── Reject a job application ──────────────────────────────────────────────

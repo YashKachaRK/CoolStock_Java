@@ -13,13 +13,25 @@ public class JobApplicationService {
     @Autowired
     private JobApplicationDAO jobApplicationDAO;
 
+    @Autowired
+    private EmailService emailService;
+
+    public boolean isEmailRegistered(String email) {
+        return jobApplicationDAO.existsByEmail(email);
+    }
+
     /**
      * Save a new job application submitted from the website form.
      */
     public boolean submitApplication(JobApplication app) {
         try {
             int rows = jobApplicationDAO.save(app);
-            return rows > 0;
+            if (rows > 0) {
+                // Send confirmation email
+                emailService.sendJobApplicationConfirmation(app.getEmail(), app.getFullName());
+                return true;
+            }
+            return false;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
