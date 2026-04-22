@@ -29,6 +29,7 @@ public class CashierController {
         
         model.addAttribute("pendingPayments", orderDAO.findPendingDepositsForCashier(cashierId));
         model.addAttribute("verifiedToday", orderDAO.findPaidTodayForCashier(cashierId));
+        model.addAttribute("verifiedHistory", orderDAO.findPaidHistoryForCashier(cashierId));
         
         model.addAttribute("countPending", orderDAO.findPendingDepositsForCashier(cashierId).size());
         model.addAttribute("countVerified", orderDAO.findPaidTodayForCashier(cashierId).size());
@@ -43,5 +44,11 @@ public class CashierController {
         Staff cashier = (Staff) session.getAttribute("staff");
         orderDAO.confirmPayment(orderId, cashier.getId());
         return "redirect:/cashier/dashboard";
+    }
+
+    @GetMapping("/profile")
+    public String profile(HttpSession session) {
+        if (!checkSession(session)) return "redirect:/login";
+        return "cashier/profile";
     }
 }
