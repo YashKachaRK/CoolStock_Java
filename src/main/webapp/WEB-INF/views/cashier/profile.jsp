@@ -31,17 +31,19 @@
                         </div>
                     </div>
                     <nav class="mt-4 space-y-1 px-3">
-                        <a href="dashboard.jsp"
-                            class="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-emerald-600 transition font-semibold text-sm"><span>💳</span>
-                            Payment Verification</a>
-                        <a href="profile.jsp"
+                        <a href="${pageContext.request.contextPath}/cashier/dashboard"
+                            class="flex items-center gap-3 py-2.5 px-4 rounded-xl hover:bg-emerald-600 transition font-semibold text-sm"><span>💸</span>
+                            Payment Verifier</a>
+                        <a href="${pageContext.request.contextPath}/cashier/profile"
                             class="flex items-center gap-3 py-2.5 px-4 rounded-xl bg-emerald-600 font-semibold text-sm"><span>👤</span>
                             My Profile</a>
                     </nav>
                 </div>
-                <div class="mb-5 px-4"><a href="../../logout.jsp"
-                        class="block py-3 px-4 bg-red-600 rounded-xl hover:bg-red-700 transition text-center font-bold text-sm">🚪
-                        Logout</a></div>
+                <div class="mb-5 px-4">
+                    <a href="${pageContext.request.contextPath}/logout"
+                        class="block py-3 px-4 bg-red-600 rounded-xl hover:bg-red-700 transition text-center font-bold text-sm text-white">🚪
+                        Logout</a>
+                </div>
             </div>
             <div class="ml-64 p-8 w-full max-w-4xl">
                 <div
@@ -50,59 +52,59 @@
                         <h1 class="text-3xl font-black">👤 My Profile</h1>
                         <p class="opacity-70 mt-1">View and update your details</p>
                     </div>
-                    <a href="dashboard.jsp"
+                    <a href="${pageContext.request.contextPath}/cashier/dashboard"
                         class="bg-white/20 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-white/30 transition">←
                         Dashboard</a>
                 </div>
                 <div class="grid grid-cols-3 gap-6">
                     <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center text-center">
                         <div class="relative mb-4">
-                            <img id="photoPreview" src="" alt="Profile"
+                            <img id="photoPreview" src="https://ui-avatars.com/api/?name=${staff.fullName}&background=059669&color=fff" alt="Profile"
                                 class="w-36 h-36 rounded-full border-4 border-emerald-100 shadow-md object-cover bg-gray-100">
                             <button onclick="document.getElementById('fileInput').click()"
                                 class="absolute bottom-1 right-1 bg-emerald-600 text-white w-9 h-9 rounded-full flex items-center justify-center text-lg shadow hover:bg-emerald-800 transition">📷</button>
                         </div>
                         <input type="file" id="fileInput" accept="image/*" onchange="uploadPhoto(event)">
-                        <p class="font-black text-xl text-gray-800" id="displayName">Priya Patel</p>
+                        <p class="font-black text-xl text-gray-800" id="displayName">${staff.fullName}</p>
                         <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold mt-1">💳
-                            Cashier</span>
+                            ${staff.role}</span>
                         <button onclick="document.getElementById('fileInput').click()"
                             class="mt-4 w-full py-2 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-800 transition">📷
                             Change Photo</button>
-                        <p class="text-xs text-gray-400 mt-2">Photo visible to Admin in Manage Staff</p>
+                        <p class="text-xs text-gray-400 mt-2">Staff Key: ${staff.staffKey}</p>
                     </div>
                     <div class="col-span-2 bg-white rounded-2xl shadow-lg p-6">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-xl font-bold text-gray-800">Profile Details</h2><button id="editBtn"
-                                onclick="toggleEdit()"
+                            <h2 class="text-xl font-bold text-gray-800">Profile Details</h2>
+                            <button id="editBtn" onclick="toggleEdit()"
                                 class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-800 transition">✏️
                                 Edit Profile</button>
                         </div>
                         <div class="space-y-4">
                             <div class="grid grid-cols-2 gap-4">
                                 <div><label class="text-xs font-bold text-gray-400 uppercase">Full Name</label>
-                                    <p id="view-name" class="font-semibold text-gray-800 mt-0.5">Priya Patel</p><input
-                                        id="edit-name" type="text" value="Priya Patel"
+                                    <p id="view-name" class="font-semibold text-gray-800 mt-0.5">${staff.fullName}</p>
+                                    <input id="edit-name" type="text" value="${staff.fullName}"
                                         class="hidden w-full border-2 border-gray-200 rounded-xl px-3 py-2 mt-0.5 text-sm outline-none">
                                 </div>
                                 <div><label class="text-xs font-bold text-gray-400 uppercase">Role</label>
-                                    <p class="font-semibold text-gray-800 mt-0.5">💳 Cashier</p>
+                                    <p class="font-semibold text-gray-800 mt-0.5">💳 ${staff.role}</p>
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div><label class="text-xs font-bold text-gray-400 uppercase">Email</label>
-                                    <p id="view-email" class="font-semibold text-gray-800 mt-0.5">priya@coolstock.in</p>
-                                    <input id="edit-email" type="email" value="priya@coolstock.in"
+                                    <p id="view-email" class="font-semibold text-gray-800 mt-0.5">${staff.email}</p>
+                                    <input id="edit-email" type="email" value="${staff.email}"
                                         class="hidden w-full border-2 border-gray-200 rounded-xl px-3 py-2 mt-0.5 text-sm outline-none">
                                 </div>
                                 <div><label class="text-xs font-bold text-gray-400 uppercase">Contact</label>
-                                    <p id="view-phone" class="font-semibold text-gray-800 mt-0.5">+91 98001 33333</p>
-                                    <input id="edit-phone" type="text" value="+91 98001 33333"
+                                    <p id="view-phone" class="font-semibold text-gray-800 mt-0.5">${staff.phone}</p>
+                                    <input id="edit-phone" type="text" value="${staff.phone}"
                                         class="hidden w-full border-2 border-gray-200 rounded-xl px-3 py-2 mt-0.5 text-sm outline-none">
                                 </div>
                             </div>
-                            <div><label class="text-xs font-bold text-gray-400 uppercase">Username</label>
-                                <p class="font-semibold text-gray-800 mt-0.5">cashier</p>
+                            <div><label class="text-xs font-bold text-gray-400 uppercase">Account Status</label>
+                                <p class="font-semibold text-emerald-600 mt-0.5">${staff.active ? 'Active' : 'Inactive'}</p>
                             </div>
                         </div>
                         <button id="saveBtn" onclick="saveProfile()"
@@ -116,12 +118,18 @@
             </div>
         </div>
         <script>
-            const KEY = 'cs_profile_cashier';
-            function loadProfile() { const d = JSON.parse(localStorage.getItem(KEY) || '{}'); if (d.photo) document.getElementById('photoPreview').src = d.photo; if (d.name) { document.getElementById('view-name').innerText = d.name; document.getElementById('edit-name').value = d.name; document.getElementById('displayName').innerText = d.name; } if (d.email) { document.getElementById('view-email').innerText = d.email; document.getElementById('edit-email').value = d.email; } if (d.phone) { document.getElementById('view-phone').innerText = d.phone; document.getElementById('edit-phone').value = d.phone; } }
             function toggleEdit() { const e = !document.getElementById('saveBtn').classList.contains('hidden');['name', 'email', 'phone'].forEach(f => { document.getElementById('view-' + f).classList.toggle('hidden', !e); document.getElementById('edit-' + f).classList.toggle('hidden', e); }); document.getElementById('saveBtn').classList.toggle('hidden'); document.getElementById('editBtn').innerText = e ? '✏️ Edit Profile' : '✖ Cancel'; }
-            function saveProfile() { const d = JSON.parse(localStorage.getItem(KEY) || '{}');['name', 'email', 'phone'].forEach(f => { d[f] = document.getElementById('edit-' + f).value; }); localStorage.setItem(KEY, JSON.stringify(d)); document.getElementById('view-name').innerText = d.name; document.getElementById('view-email').innerText = d.email; document.getElementById('view-phone').innerText = d.phone; document.getElementById('displayName').innerText = d.name; toggleEdit(); document.getElementById('savedMsg').classList.remove('hidden'); setTimeout(() => document.getElementById('savedMsg').classList.add('hidden'), 3000); }
-            function uploadPhoto(e) { const r = new FileReader(); r.onload = ev => { document.getElementById('photoPreview').src = ev.target.result; const d = JSON.parse(localStorage.getItem(KEY) || '{}'); d.photo = ev.target.result; localStorage.setItem(KEY, JSON.stringify(d)); }; r.readAsDataURL(e.target.files[0]); }
-            loadProfile();
+            function saveProfile() { 
+                // In a real app, this would be an AJAX call
+                document.getElementById('view-name').innerText = document.getElementById('edit-name').value;
+                document.getElementById('view-email').innerText = document.getElementById('edit-email').value;
+                document.getElementById('view-phone').innerText = document.getElementById('edit-phone').value;
+                document.getElementById('displayName').innerText = document.getElementById('edit-name').value;
+                toggleEdit(); 
+                document.getElementById('savedMsg').classList.remove('hidden'); 
+                setTimeout(() => document.getElementById('savedMsg').classList.add('hidden'), 3000); 
+            }
+            function uploadPhoto(e) { const r = new FileReader(); r.onload = ev => { document.getElementById('photoPreview').src = ev.target.result; }; r.readAsDataURL(e.target.files[0]); }
         </script>
     </body>
 

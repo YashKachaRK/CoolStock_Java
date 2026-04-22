@@ -315,6 +315,16 @@ public class OrderDAO {
         return orders;
     }
 
+    public List<Order> findPaidHistoryForCashier(int cashierId) {
+        String sql = "SELECT * FROM orders WHERE payment_status = 'Paid' AND cashier_id = ? AND DATE(order_date) < CURDATE() ORDER BY order_date DESC";
+        List<Order> orders = jdbcTemplate.query(sql, new OrderRowMapper(), cashierId);
+        for (Order order : orders) {
+            order.setCustomer(customerDAO.findById(order.getCustomerId()));
+            order.setItemsSummary(getItemsSummaryForOrder(order.getId()));
+        }
+        return orders;
+    }
+
     public java.math.BigDecimal sumPaidTodayForCashier(int cashierId) {
         String sql = "SELECT SUM(total_amount) FROM orders WHERE payment_status = 'Paid' AND cashier_id = ? AND DATE(order_date) = CURDATE()";
         java.math.BigDecimal sum = jdbcTemplate.queryForObject(sql, java.math.BigDecimal.class, cashierId);
